@@ -138,6 +138,16 @@ class GoogleStreamingAsr extends EventEmitter {
       recognizeStream = this.client
         .streamingRecognize(request)
         .on('error', (error) => {
+          // After an intentional stop(), killing the recorder and ending
+          // this stream isn't perfectly synchronous: buffered audio still
+          // in flight can get written here after .end() was called,
+          // throwing "write after end". That's expected shutdown noise,
+          // not a real ASR error — emitting it here would otherwise crash
+          // the process, since sessionController already removed its
+          // listeners by the time this fires.
+          if (!this.running) {
+            return;
+          }
           this.emit('error', toError(error, 'ASR streaming error.'));
         })
         .on('data', (data) => {
@@ -160,6 +170,9 @@ class GoogleStreamingAsr extends EventEmitter {
 
       if (recording.process) {
         recording.process.on('error', (error) => {
+          if (!this.running) {
+            return;
+          }
           this.emit('error', this.normalizeRecorderError(selectedRecorder, error));
         });
       }
@@ -167,6 +180,9 @@ class GoogleStreamingAsr extends EventEmitter {
       recording
         .stream()
         .on('error', (error) => {
+          if (!this.running) {
+            return;
+          }
           this.emit('error', this.normalizeRecorderError(selectedRecorder, error));
         })
         .pipe(recognizeStream);
