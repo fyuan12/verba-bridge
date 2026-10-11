@@ -33,6 +33,14 @@ if (!Number.isInteger(asrSampleRate) || asrSampleRate <= 0) {
   );
 }
 
+const translationProvider = (process.env.TRANSLATION_PROVIDER || 'google').toLowerCase();
+
+if (translationProvider !== 'google' && translationProvider !== 'deepl') {
+  throw new Error(
+    `Invalid TRANSLATION_PROVIDER "${process.env.TRANSLATION_PROVIDER}". Use google or deepl.`
+  );
+}
+
 module.exports = {
   rootDir: ROOT_DIR,
   port,
@@ -44,9 +52,13 @@ module.exports = {
   asrInterimResults: process.env.ASR_INTERIM_RESULTS === 'true',
   audioDevice: process.env.AUDIO_DEVICE || '',
   recordProgram: process.env.RECORD_PROGRAM || '',
+  translationProvider,
   translationProjectId:
     process.env.TRANSLATION_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || '',
   translationLocation: process.env.TRANSLATION_LOCATION || 'global',
   translationGlossaryId: process.env.TRANSLATION_GLOSSARY_ID || '',
+  deeplApiKey: process.env.DEEPL_API_KEY || '',
+  deeplApiUrl: process.env.DEEPL_API_URL || '',
+  deeplGlossaryId: process.env.DEEPL_GLOSSARY_ID || '',
   staticDir: resolveProjectPath('public'),
 };

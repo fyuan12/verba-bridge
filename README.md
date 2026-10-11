@@ -148,6 +148,30 @@ This project splits the two concerns of term handling between layers that each d
 
 Earlier versions of this repo did post-translation string replacement locally. That approach was removed because it only worked when Google left source-language tokens in the output, which rarely happens for terms Google already knows.
 
+## Translation Backend: Google vs. DeepL
+
+ASR (speech recognition) always runs on Google Cloud Speech-to-Text —
+that part is unchanged. The *translation* leg, however, is pluggable via
+`TRANSLATION_PROVIDER`:
+
+- `TRANSLATION_PROVIDER=google` (default): uses Cloud Translation API v3,
+  as described above.
+- `TRANSLATION_PROVIDER=deepl`: uses the DeepL API instead. Set
+  `DEEPL_API_KEY` in `.env`. Free-plan keys end in `:fx` and are
+  automatically routed to the free API host (`api-free.deepl.com`); paid
+  Pro keys are routed to `api.deepl.com` automatically. Override with
+  `DEEPL_API_URL` only if needed.
+
+DeepL glossaries work differently from Google's: you create and manage
+them directly via DeepL's own glossary API (not the
+`sync-cloud-glossary.sh` script, which is Google-specific), then set
+`DEEPL_GLOSSARY_ID` once you have one.
+
+You still need a Google Cloud service account and billing enabled for
+Speech-to-Text regardless of which translation provider you choose —
+switching to DeepL only replaces the translation API call, not the ASR
+pipeline.
+
 ## Cloud Translation Glossary
 
 Local `config/glossary.csv` is used for ASR phrase hints. If you also want

@@ -10,17 +10,31 @@ const { isValidDirection } = require('./constants');
 const { loadGlossaryFromCsv } = require('./glossary/glossaryLoader');
 const GlossaryHints = require('./glossary/glossaryHints');
 const GoogleTranslator = require('./translation/googleTranslator');
+const DeepLTranslator = require('./translation/deeplTranslator');
 const SessionController = require('./session/sessionController');
 const SubtitleHub = require('./websocket/subtitleHub');
 const TranscriptRecorder = require('./recorder/transcriptRecorder');
 
 const glossaryEntries = loadGlossaryFromCsv(config.glossaryPath);
 const glossaryHints = new GlossaryHints(glossaryEntries);
-const translator = new GoogleTranslator({
-  projectId: config.translationProjectId,
-  location: config.translationLocation,
-  glossaryId: config.translationGlossaryId,
-});
+
+function buildTranslator() {
+  if (config.translationProvider === 'deepl') {
+    return new DeepLTranslator({
+      apiKey: config.deeplApiKey,
+      apiUrl: config.deeplApiUrl,
+      glossaryId: config.deeplGlossaryId,
+    });
+  }
+
+  return new GoogleTranslator({
+    projectId: config.translationProjectId,
+    location: config.translationLocation,
+    glossaryId: config.translationGlossaryId,
+  });
+}
+
+const translator = buildTranslator();
 const sessionController = new SessionController({
   glossaryHints,
   translator,
@@ -205,6 +219,7 @@ sessionController.on('error', (payload) => {
 server.listen(config.port, () => {
   console.log(`VerbaBridge server running on http://localhost:${config.port}`);
   console.log(`Default direction: ${config.defaultDirection}`);
+  console.log(`Translation provider: ${config.translationProvider}`);
 });
 
 async function shutdown() {
