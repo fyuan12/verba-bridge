@@ -112,6 +112,15 @@ Ward,支会
 Bishop,主教
 ```
 
+`config/glossary.csv` ships with ~560 LDS-specific terms (church
+organization, ordinances, scripture names and books, common sacrament-
+and testimony-meeting phrases) compiled from official Church resources
+and authorized Chinese translations. Trim or extend it for your ward's
+actual vocabulary — local leader names, hymn titles, stake-specific
+terms. Comfortably within Google Speech-to-Text's phrase-hint limits
+(5,000 phrases / ~20,000 characters; the shipped list uses ~560 phrases
+and ~6,600 characters per direction).
+
 ## 3. Run Locally
 
 ```bash
@@ -211,6 +220,53 @@ Requirements on the host: `bash`, `gcloud` SDK (`gcloud` + `gsutil`),
 `python3`, `curl`. The user running the script must either be
 authenticated via `gcloud auth login` or the script will fall back to
 the service account key for authentication.
+
+## DeepL Glossary
+
+If `TRANSLATION_PROVIDER=deepl`, use the DeepL-specific sync script
+instead — DeepL's glossary API is unrelated to Google's, and DeepL
+glossaries are **unidirectional** (one source/target language pair per
+glossary), unlike Google's. The script provisions two glossaries from
+the same `config/glossary.csv`, one per direction:
+
+```bash
+node scripts/sync-deepl-glossary.js
+```
+
+It deletes any existing glossary with the same name, creates a fresh
+one per direction, polls until DeepL reports it ready, and prints the
+two glossary ids to paste into `.env`:
+
+```bash
+DEEPL_GLOSSARY_ID_EN_TO_ZH=...
+DEEPL_GLOSSARY_ID_ZH_TO_EN=...
+```
+
+Required `.env` value before running: `DEEPL_API_KEY`.
+
+**Ambiguous terms are skipped automatically, not treated as errors.**
+Because `config/glossary.csv` is a flat 2-column list, the same word can
+legitimately mean two different things depending on context — e.g.
+"Moroni" the book of the Book of Mormon vs. "Moroni" the angel/prophet,
+or "confirm"/"confirmation" both correctly translating from the same
+Chinese term in reverse. DeepL requires a unique source term per
+glossary entry, so the script keeps the first occurrence of each source
+term per direction and prints what it skipped, e.g.:
+
+```text
+EN_TO_ZH: EN -> ZH (563 terms, 558 unique sources)
+  Skipping 5 ambiguous term(s) (same source, conflicting translations):
+    "Moroni": kept "摩罗乃书", skipped "摩罗乃"
+```
+
+If a skipped mapping matters more to you than the one that was kept,
+reorder the conflicting rows in `config/glossary.csv` (first occurrence
+wins) and re-run the script. Either way, both versions remain in the
+ASR phrase-hints list — only the translation-forcing glossary has to
+pick one.
+
+Re-run any time you edit `config/glossary.csv`. Idempotent, safe to
+run repeatedly.
 
 ## Session Transcripts
 

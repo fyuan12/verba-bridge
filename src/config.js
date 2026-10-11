@@ -1,5 +1,5 @@
 const path = require('path');
-const { DIRECTIONS, isValidDirection } = require('./constants');
+const { DIRECTIONS, DIRECTION_CONFIG, isValidDirection } = require('./constants');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -41,6 +41,21 @@ if (translationProvider !== 'google' && translationProvider !== 'deepl') {
   );
 }
 
+// DeepL glossaries are unidirectional, so each direction gets its own env
+// var (DEEPL_GLOSSARY_ID_EN_TO_ZH, DEEPL_GLOSSARY_ID_ZH_TO_EN, ...), keyed
+// here by "<sourceLanguageCode>><targetLanguageCode>" to match how
+// DeepLTranslator looks them up. Adding a new direction in constants.js
+// picks up its glossary id automatically once the matching env var is set.
+const deeplGlossaryIds = {};
+Object.keys(DIRECTION_CONFIG).forEach((direction) => {
+  const { sourceLanguageCode, targetLanguageCode } = DIRECTION_CONFIG[direction];
+  const value = process.env[`DEEPL_GLOSSARY_ID_${direction}`];
+
+  if (value) {
+    deeplGlossaryIds[`${sourceLanguageCode.toLowerCase()}>${targetLanguageCode.toLowerCase()}`] = value;
+  }
+});
+
 module.exports = {
   rootDir: ROOT_DIR,
   port,
@@ -59,6 +74,6 @@ module.exports = {
   translationGlossaryId: process.env.TRANSLATION_GLOSSARY_ID || '',
   deeplApiKey: process.env.DEEPL_API_KEY || '',
   deeplApiUrl: process.env.DEEPL_API_URL || '',
-  deeplGlossaryId: process.env.DEEPL_GLOSSARY_ID || '',
+  deeplGlossaryIds,
   staticDir: resolveProjectPath('public'),
 };

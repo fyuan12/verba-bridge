@@ -23,7 +23,7 @@ function buildTranslator() {
     return new DeepLTranslator({
       apiKey: config.deeplApiKey,
       apiUrl: config.deeplApiUrl,
-      glossaryId: config.deeplGlossaryId,
+      glossaryIds: config.deeplGlossaryIds,
     });
   }
 
